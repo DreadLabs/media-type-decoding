@@ -1,0 +1,9 @@
+default:
+    formatters:
+        pretty: true
+
+    suites:
+        acceptance:
+            paths: ["%paths.base%/tests/Acceptance/features"]
+            contexts:
+                - DreadLabs\MediaTypeDecoding\Tests\Acceptance\FeatureContext
