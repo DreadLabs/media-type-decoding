@@ -1,5 +1,5 @@
 {
-    "name": "dreadlabs/mediatype-decoding",
+    "name": "dreadlabs/media-type-decoding",
     "description": "Simple API for Media type inference.",
     "type": "library",
     "license": "MIT",
@@ -9,13 +9,14 @@
             "email": "dev@van-tomas.de"
         }
     ],
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "require": {
     },
     "require-dev": {
-        "behat/behat": "~3.4.3",
-        "phpunit/phpunit": "~6.5.8",
-        "sami/sami": "~4.0.16"
+        "behat/behat": "~3.4.3@stable",
+        "phpunit/phpunit": "~6.5.8@stable",
+        "sami/sami": "~4.0.16@stable"
     },
     "autoload": {
         "psr-4": {
@@ -27,6 +28,12 @@
             "DreadLabs\\MediaTypeDecoding\\Tests\\": "tests/"
         }
     },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../../packages/*"
+        }
+    ],
     "scripts": {
         "prepare-build-dir": [
             "mkdir -p ./build/coverage/html",
