@@ -16,7 +16,8 @@
     "require-dev": {
         "behat/behat": "~3.4.3@stable",
         "phpunit/phpunit": "~6.5.8@stable",
-        "sami/sami": "~4.0.16@stable"
+        "sami/sami": "~4.0.16@stable",
+        "phpunit/phpcov": "~4.0.5@stable"
     },
     "autoload": {
         "psr-4": {
@@ -35,67 +36,77 @@
         }
     ],
     "scripts": {
-        "prepare-build-dir": [
+        "prepare:build-dir": [
+            "mkdir -p ./build/analyses",
             "mkdir -p ./build/coverage/html",
-            "mkdir -p ./build/deptrac",
-            "mkdir -p ./build/logs",
-            "mkdir -p ./build/pdepend",
-            "mkdir -p ./build/behat"
+            "mkdir -p ./build/docs/api",
+            "mkdir -p ./build/metrics"
         ],
-        "lint": [
-            "find src/ tests/ -name \"*.php\" -exec php -l {} \\;"
+        "lint:php": [
+            "find src/ tests/ -name \"*.php\" -print0 | xargs -0 -n1 php -l"
         ],
-        "dep-graph": [
-            "@prepare-build-dir",
-            "deptrac analyze --formatter-graphviz-dump-image=./build/deptrac/dependency-graph.png"
+        "analyze:dependencies": [
+            "@prepare:build-dir",
+            "deptrac analyze --formatter-graphviz-dump-image=./build/analyses/dependencies.png"
         ],
-        "static-analysis": [
-            "@prepare-build-dir",
-            "phploc --names=\"*.php\" --count-tests --exclude=\"vendor\" --log-csv=\"./build/logs/phploc.csv\" --log-xml=\"./build/logs/phploc.xml\" ./src ./tests",
-            "phpcpd --names=\"*.php\" --log-pmd=\"./build/logs/phpcpd.xml\" --progress ./src/",
-            "phpmd ./src/ xml cleancode,codesize,controversial,design,naming,unusedcode --reportfile ./build/logs/phpmd.xml --minimumpriority 5 || true",
-            "phpcs -np --report=checkstyle --report-checkstyle=./build/logs/checkstyle.xml --standard=PSR2 --ignore=**/vendor/**,**/tests/** --extensions=php ./src ./tests || true"
+        "analyze:static": [
+            "@prepare:build-dir",
+            "phploc --names=\"*.php\" --count-tests --exclude=\"vendor\" --log-csv=\"./build/analyses/phploc.csv\" --log-xml=\"./build/analyses/phploc.xml\" ./src ./tests",
+            "phpcpd --names=\"*.php\" --log-pmd=\"./build/analyses/phpcpd.xml\" --progress ./src/",
+            "phpmd ./src/ xml cleancode,codesize,controversial,design,naming,unusedcode --reportfile ./build/analyses/phpmd.xml --minimumpriority 5 || true",
+            "phpcs -np --report=checkstyle --report-checkstyle=./build/analyses/checkstyle.xml --standard=PSR2 --ignore=**/vendor/**,**/tests/** --extensions=php ./src ./tests || true"
         ],
-        "stan": "@static-analysis",
-        "test-unit": [
-            "phpunit --verbose --testdox --no-coverage"
+        "analyze:metrics": [
+            "@prepare:build-dir",
+            "[ -f ./build/coverage/clover.xml ] || (echo 'Run composer test:coverage:merge first!' && exit 1)",
+            "pdepend --coverage-report=./build/coverage/clover.xml --summary-xml=./build/metrics/summary.xml --jdepend-xml=./build/metrics/report.xml --jdepend-chart=./build/metrics/chart.svg --overview-pyramid=./build/metrics/pyramid.svg --suffix=php --ignore=**/vendor/**,**/tests/** ./src/"
         ],
-        "test-unit-ci": [
-            "@prepare-build-dir",
-            "phpdbg -qrr vendor/bin/phpunit --coverage-clover ./build/coverage/clover.xml --coverage-html ./build/coverage/html --colors=never -d memory_limit=512M"
+        "test:unit": [
+            "phpunit --testsuite Unit --verbose --testdox --no-coverage"
         ],
-        "metrics": [
-            "@prepare-build-dir",
-            "pdepend --coverage-report=./build/coverage/clover.xml --summary-xml=./build/pdepend/summary.xml --jdepend-xml=./build/pdepend/report.xml --jdepend-chart=./build/pdepend/chart.svg --overview-pyramid=./build/pdepend/pyramid.svg --suffix=php --ignore=**/vendor/**,**/tests/** ./src/"
+        "test:unit:with-coverage": [
+            "@prepare:build-dir",
+            "phpdbg -qrr vendor/bin/phpunit --coverage-php ./build/coverage/unit.cov --colors=never -d memory_limit=512M"
         ],
-        "test-acceptance": [
+        "test:integration": [
+            "phpunit --testsuite Integration --verbose --testdox --no-coverage"
+        ],
+        "test:integration:with-coverage": [
+            "@prepare:build-dir",
+            "phpdbg -qrr vendor/bin/phpunit --coverage-php ./build/coverage/integration.cov --colors=never -d memory_limit=512M"
+        ],
+        "test:coverage:merge": [
+            "@prepare:build-dir",
+            "phpcov merge ./build/coverage --clover ./build/coverage/clover.xml --html ./build/coverage/html"
+        ],
+        "test:acceptance:fail-fast": [
             "behat -v --stop-on-failure"
         ],
-        "test-acceptance-ci": [
-            "@prepare-build-dir",
+        "test:acceptance": [
+            "@prepare:build-dir",
             "behat -v --format progress"
         ],
-        "test-ci": [
+        "test:all": [
             "@lint",
-            "@dep-graph",
-            "@stan",
-            "@test-unit-ci",
-            "@test-acceptance-ci",
-            "@metrics"
+            "@analyze:dependencies",
+            "@analyze:static",
+            "@test:unit:with-coverage",
+            "@test:integration:with-coverage",
+            "@test:coverage:merge",
+            "@test:acceptance",
+            "@analyze:metrics"
         ],
-        "codestyle-fix-dry": [
+        "fix:codestyle:dry": [
             "php-cs-fixer fix --config=.php_cs.dist -v --dry-run --stop-on-violation"
         ],
-        "csfd": "@codestyle-fix-dry",
-        "codestyle-fix": [
+        "fix:codestyle": [
             "php-cs-fixer fix --config=.php_cs.dist -v"
         ],
-        "csf": "@codestyle-fix",
-        "docs": [
-            "@doc-api"
+        "docs:all": [
+            "@docs:api"
         ],
-        "doc-api": [
-            "@prepare-build-dir",
+        "docs:api": [
+            "@prepare:build-dir",
             "sami.php update --force .sami.php"
         ]
     }

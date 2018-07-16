@@ -13,6 +13,6 @@ declare(strict_types=1);
 return new Sami\Sami('./src', [
     'theme' => 'default',
     'title' => 'dreadlabs/media-type-decoding',
-    'build_dir' => __DIR__.'/build/doc/api',
-    'cache_dir' => __DIR__.'/build/doc/api/cache',
+    'build_dir' => __DIR__.'/build/docs/api',
+    'cache_dir' => __DIR__.'/build/docs/api/cache',
 ]);
