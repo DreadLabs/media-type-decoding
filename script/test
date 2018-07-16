@@ -1,0 +1,48 @@
+#!/bin/sh
+
+# script/test: Run test suite for application. Optionally pass in a path to an
+#              individual test file to run a single Unit test.
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+[ -z "$DEBUG" ] || set -x
+
+if [ "$ENV" = "test" ]; then
+  # if executed and the environment is already set to `test`, then we want a
+  # clean from scratch application. This almost always means a ci environment,
+  # since we set the environment to `test` directly in `script/cibuild`.
+  script/setup
+else
+  # if the environment isn't set to `test`, set it to `test` and update the
+  # application to ensure all dependencies are met as well as any other things
+  # that need to be up to date, like db migrations. The environment not having
+  # already been set to `test` almost always means this is being called on it's
+  # own from a `development` environment.
+  export ENV="test"
+
+  script/update
+fi
+
+echo "==> Running tests…"
+
+if [ -n "$1" ]; then
+  # pass arguments to test call. This is useful for calling a single test.
+  # NOTE: this usually means running a Unit test
+  docker run \
+    --rm \
+    --volume "$(pwd)":/app \
+    --workdir /app \
+    --entrypoint /usr/local/bin/entrypoint-suexec.sh \
+    dreadlabs/php-lib:7.0-dev \
+    composer test:unit -- "$1"
+else
+  docker run \
+    --rm \
+    --volume "$(pwd)":/app \
+    --workdir /app \
+    --entrypoint /usr/local/bin/entrypoint-suexec.sh \
+    dreadlabs/php-lib:7.0-dev \
+    composer test:all
+fi
