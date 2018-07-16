@@ -26,6 +26,7 @@ final class Parameters
 
     public function __construct()
     {
+        $this->parameters = [];
         $this->inferredValue = '';
     }
 
